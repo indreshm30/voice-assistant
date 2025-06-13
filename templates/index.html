@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Voice Translation Assistant</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #bd3aff, #ff446a);
+            color: #333;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .container {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
+            width: 500px;
+            max-width: 90%;
+            overflow: hidden;
+        }
+
+        .header {
+            background: #8b2cff;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 20px;
+        }
+
+        .header p {
+            font-size: 12px;
+            margin-top: 4px;
+        }
+
+        .mode-toggle {
+            margin-top: 10px;
+        }
+
+        .mode-toggle button {
+            background: white;
+            border: none;
+            border-radius: 20px;
+            margin: 5px;
+            padding: 6px 14px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .section {
+            padding: 16px;
+        }
+
+        .lang-select {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 16px;
+        }
+
+        .lang-select div {
+            flex: 1;
+            margin: 0 5px;
+        }
+
+        .lang-select label {
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        select {
+            width: 100%;
+            padding: 8px;
+            border-radius: 10px;
+            border: 1px solid #ccc;
+        }
+
+        .textarea-section {
+            background: #f8f8f8;
+            padding: 16px;
+            border-radius: 10px;
+            margin-bottom: 16px;
+        }
+
+        .textarea-section h4 {
+            margin: 0 0 6px;
+        }
+
+        textarea {
+            width: 100%;
+            border: none;
+            background: transparent;
+            resize: none;
+            height: 60px;
+            font-size: 14px;
+        }
+
+        .error-message {
+            color: red;
+            font-size: 13px;
+            padding: 0 16px 10px;
+        }
+
+        .button-group {
+            display: flex;
+            justify-content: space-around;
+            padding: 16px;
+        }
+
+        .button-group button {
+            border: none;
+            padding: 12px 20px;
+            border-radius: 24px;
+            color: white;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .start-btn {
+            background: #ff4b5c;
+        }
+
+        .play-btn {
+            background: #00c26e;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Voice Translation Assistant</h1>
+            <p>Real-time speech translation for seamless communication</p>
+            <div class="mode-toggle">
+                <button>Manual Mode</button>
+                <button>Customer Care Mode</button>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="lang-select">
+                <div>
+                    <label>Source Language:</label>
+                    <select id="source-lang">
+                        <option value="en">English</option>
+                        <option value="hi">Hindi</option>
+                        <option value="es">Spanish</option>
+                        <!-- Add more as needed -->
+                    </select>
+                </div>
+                <div>
+                    <label>Target Language:</label>
+                    <select id="target-lang">
+                        <option value="hi">Hindi</option>
+                        <option value="en">English</option>
+                        <option value="fr">French</option>
+                        <!-- Add more as needed -->
+                    </select>
+                </div>
+            </div>
+
+            <div class="textarea-section">
+                <h4>🗣️ Original Text</h4>
+                <textarea id="original-text" readonly>Listening...</textarea>
+            </div>
+
+            <div class="textarea-section">
+                <h4>🌐 Translated Text</h4>
+                <textarea id="translated-text" readonly>Translation will appear here</textarea>
+            </div>
+
+            <div class="error-message" id="error-msg">
+                <!-- Dynamic error message appears here -->
+            </div>
+
+            <div class="button-group">
+                <button class="start-btn" onclick="startSpeaking()">🎤 Start Speaking</button>
+                <button class="play-btn" onclick="playTranslation()">🔊 Play Translation</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function startSpeaking() {
+            const sourceLang = document.getElementById('source-lang').value;
+            const targetLang = document.getElementById('target-lang').value;
+
+            document.getElementById('original-text').value = 'Listening...';
+            document.getElementById('translated-text').value = '';
+            document.getElementById('error-msg').innerText = '';
+
+            try {
+                const res = await fetch('/translate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ source_lang: sourceLang, target_lang: targetLang })
+                });
+                const data = await res.json();
+
+                document.getElementById('original-text').value = data.transcribed || '';
+                document.getElementById('translated-text').value = data.translated || '';
+                
+                if (data.audio) {
+                    window.translatedAudio = new Audio('data:audio/mpeg;base64,' + data.audio);
+                }
+
+                if (!data.transcribed || data.transcribed.toLowerCase().includes('error')) {
+                    document.getElementById('error-msg').innerText = '⚠️ ' + data.transcribed;
+                }
+            } catch (err) {
+                document.getElementById('error-msg').innerText = '⚠️ Error: ' + err.message;
+            }
+        }
+
+        function playTranslation() {
+            if (window.translatedAudio) {
+                window.translatedAudio.play();
+            }
+        }
+    </script>
+</body>
+</html>
